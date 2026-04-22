@@ -259,8 +259,9 @@
 
 ## 開いている論点
 
-- ストレージの具体選定: SQLite 単一 DB にするか、イベントは append-only の JSONL / Parquet にして集計側で DuckDB を使うか
+- ストレージの具体選定: SQLite 単一 DB にするか、イベントは append-only の JSONL / Parquet にして集計側で DuckDB を使うか（先行事例: OpenUsage は SQLite、Liam ERD のブログは DuckDB — `docs/prior-art.md` §7, §8 参照）
 - ダッシュボードのフロントエンド技術: Next.js か SvelteKit か、あるいは静的 HTML + サーバーサイドレンダリング
 - CLI / MCP サーバーの実装言語: Python（`anthropic` MCP SDK との相性）か TypeScript か
-- モデル単価テーブルの更新方法: 同梱 vs オンライン取得（N1 との整合）
-- hook 登録の冪等性確保（既存 `settings.json` への統合方針）
+- モデル単価テーブルの更新方法: 同梱 vs オンライン取得（N1 との整合、ccusage のテーブルを参照 — `docs/prior-art.md` §2）
+- hook 登録の冪等性確保（既存 `settings.json` への統合方針、disler/multi-agent-observability を参照 — `docs/prior-art.md` §4）
+- 公式 OTEL エクスポートとの関係: 補完入力として取り込むか、独自収集のみにするか（`docs/prior-art.md` §1, §6 参照）
