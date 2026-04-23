@@ -157,3 +157,147 @@
 - **反映先**: `docs/requirements.md` §N7
 
 ---
+
+## 決定 8: タスクの成功/失敗
+
+- **論点**: 「タスクが成功したか」を示す指標を持つか
+- **決定**: **A — 追わない**。主観指標は Phase 1 では持たない。ツール失敗率 (`is_error`) のみ提供。
+- **根拠**:
+  - 「いつ・何をした・いくらトークン使った」の核に収まらない
+  - 代理指標はノイズが多く、手動ラベルは継続されない
+- **却下した代替案**: B（代理指標）, C（手動ラベル）
+- **反映先**: 要件側では明示的な条項を追加せず、F1.3 の計測項目から「成功率」を除外することで担保
+
+---
+
+## 決定 9: 公式 OTel との関係
+
+- **論点**: Claude Code 公式 OTel (`CLAUDE_CODE_ENABLE_TELEMETRY`) を Gengar の入力源として取り込むか
+- **決定**: **A' — Gengar が独自に OTel SDK を用いてメトリクスを emit する**。公式 OTel は前提としない。両者は独立に ON/OFF でき、並立可能。メトリクス名は `gengar.claude_code.*` prefix で衝突回避。
+- **根拠**:
+  - 公式 OTel 有効化はユーザーへの追加負担
+  - Gengar は hook + JSONL で独自に収集できるため入力源として公式 OTel に依存する必要がない
+  - OTel SDK を介すことで、Prometheus / SigNoz / 各種 OTel backend に横断で出力できる (ベンダー中立)
+  - 公式 OTel と並立しても同じ backend に吸える (prefix 分離)
+- **却下した代替案**:
+  - B（公式 OTel を前提にし、JSONL からの補完のみ）: Gengar の適用範囲を狭めすぎる
+  - C（公式 OTel を補完源として取り込む）: 両立サポートは複雑で MVP に不向き
+- **反映先**: `docs/requirements.md` §R1 / §5.3 / `docs/functional-requirements.md` §F2
+
+---
+
+## 決定 10: ダッシュボード起動モデル — collector と UI を完全分離
+
+- **論点**: daemon と UI を同居させるか分離するか。自作ダッシュボードを作るか
+- **決定**: **分離する。自作ダッシュボードは作らず Grafana などの外部ツールに委譲**。Gengar は collector (hook + JSONL → OTel emit) に徹する。
+- **根拠**:
+  - Grafana / Prometheus / SigNoz などのエコシステムは成熟しており再発明する理由がない
+  - Gengar の差別化は「Claude Code 特有の収集」にあり、UI はコモディティ
+  - メンテナンス負荷が大幅に下がる
+- **副次効果**:
+  - R2 (可視化) が外部委譲に書き換え。R2.3「自作ダッシュボードは作らない」を明記
+  - F3 (API サーバー) と F4 (ダッシュボード UI) を要件から削除
+  - ユーザーは OTel backend + 可視化ツール (既存運用の Grafana 等) を用意する前提
+- **反映先**: `docs/requirements.md` §R2, §5.2 / `docs/functional-requirements.md` 全面
+
+---
+
+## 決定 11: ネットワーク公開範囲
+
+- **論点**: Gengar daemon のネットワーク露出をどう扱うか
+- **決定**: **daemon は inbound ポートを基本持たない**。OTLP は outbound push なのでポート不要。`/metrics` exposition を選んだ場合のみ `127.0.0.1` 限定で出す。
+- **根拠**:
+  - push 型で完結するなら inbound ポート自体が不要
+  - LAN 公開 / 認証 を考える必要がなくなり最小構成に合致
+- **反映先**: `docs/functional-requirements.md` §F3.2.3
+
+---
+
+## 決定 12: UI 言語
+
+- **論点**: UI / エラーメッセージの言語
+- **決定**: **英語のみ**。i18n は Phase 1 ではやらない。docs は日本語のまま。
+- **根拠**:
+  - UI は外部ツール (Grafana) に委譲するため Gengar 側の文言は CLI / エラー / ログに限定される
+  - 英語なら OSS 化・海外ユーザー対応も取り急ぎ不要にならない
+- **反映先**: `docs/requirements.md` §5.3
+
+---
+
+## 決定 13: クエリエンジンは作らない
+
+- **論点**: メトリクスのクエリ / 集計ロジックをどこで行うか
+- **決定**: **Gengar はクエリエンジンを持たない**。PromQL / backend の query API に完全委譲。CLI / MCP も backend API の薄いラッパーとして実装する (post-MVP)。
+- **根拠**:
+  - Prometheus / VictoriaMetrics / SigNoz はいずれも強力なクエリ言語を持つ
+  - 自作クエリエンジンは MVP を膨らませ、再発明になる
+  - 自己改善ヒントは PromQL のプリセットとして同梱すれば十分
+- **反映先**: `docs/requirements.md` §R3.4 / §5.2 / `docs/functional-requirements.md` §F5
+
+---
+
+## 決定 14: MCP と CLI の優先順位
+
+- **論点**: CLI と MCP サーバーのどちらを先に作るか、両方 MVP に入れるか
+- **決定**: **どちらも Phase 1 MVP (v0.1) には入れない**。v0.2 で CLI、v0.3 で MCP の順で追加する。
+- **根拠**:
+  - 最小構成「collector のみで動く」に絞るため
+  - backend (Prometheus / Grafana) があれば人間は可視化で用が足りる
+  - CLI / MCP は PromQL ラッパーで後から薄く載せられる
+- **反映先**: `docs/requirements.md` §R3 (post-MVP) / `docs/functional-requirements.md` §F5
+
+---
+
+## 決定 15: Claude Code バージョン範囲
+
+- **論点**: 対応する Claude Code のバージョン下限を明記するか
+- **決定**: **現行最新のみ保証**。hook ペイロード・JSONL 形式の変更には都度追従する。過去バージョンサポートは明言しない。
+- **反映先**: `docs/requirements.md` §5.5
+
+---
+
+## 決定 16: 配布形態・ライセンス
+
+- **論点**: OSS にするか内部ツールか、ライセンスは何か
+- **決定**: **(c) Phase 1 は private 開発、ライセンス未確定**。OSS 公開は将来の判断。公開時は MIT を第一候補とする。
+- **根拠**:
+  - Phase 1 はプロトタイプ段階、公開判断を急がない
+  - 先行事例 (ccusage, disler) の参照・引用はライセンス確認してから行う
+- **反映先**: `docs/requirements.md` §6
+
+---
+
+## 決定 17: 成功指標の測定可能性
+
+- **論点**: §6 の「5 秒以内反映」「10 秒以内クエリ」「2 秒以内表示」をどう扱うか
+- **決定**: **Phase 1 では数値目標を削除**。「体感で遅くないこと」「1 日使って困らないこと」に留める。実測値に基づく SLO は Phase 2 以降で設定する。
+- **根拠**:
+  - 測定条件 (マシン、DB 規模、warm/cold) が未定義で数値単独には意味がない
+  - 計測インフラを先に整える工数が MVP に合わない
+  - 実装後に実測して正直な数値を置く方が健全
+- **反映先**: `docs/requirements.md` §7
+
+---
+
+## 決定 18: アーキテクチャのピボット — Gengar は Collector のみ
+
+- **論点**: 決定 10, 13 の統合効果として、Gengar の全体アーキテクチャをどう定義するか
+- **決定**: Gengar は **「hook + JSONL から OTel メトリクスを emit する collector」** に徹する。以下を**永久にスコープ外**として確定する:
+  - 自作ダッシュボード UI
+  - 自作 API サーバー
+  - 自作ストレージ
+  - 自作クエリエンジン
+  - 保持期間・ロールアップなどのデータライフサイクル管理（backend の retention に委譲）
+- **根拠**:
+  - 観測スタック (OTel + Prometheus + Grafana) は十分に成熟しており、Gengar 独自価値は「Claude Code 特有のメトリクス収集」にある
+  - スコープを collector に絞ることで、実装コストが 1/2 〜 1/3 に圧縮される見込み
+  - ユーザーの既存 observability 運用とも統合しやすい
+- **副次効果**:
+  - R2 は「外部委譲」として書き換え
+  - R4 は「backend 委譲 + ラッパー提供」に書き換え
+  - F2 (旧ストレージ) / F3 (旧 API) / F4 (旧 UI) は要件から除去
+  - 新 F2 は「OTel emit」、新 F3 は「セットアップ」、新 F4 は「self-observability」
+  - Must スコープは大幅縮小され Phase 1 MVP が「動くところ」まで到達しやすくなる
+- **反映先**: `docs/requirements.md` 全面 / `docs/functional-requirements.md` 全面書き換え
+
+---

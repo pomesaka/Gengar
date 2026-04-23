@@ -135,18 +135,19 @@ Claude Code を含むローカル AI エージェントのメトリクス収集�
 
 凡例: ● あり / ◐ 部分対応 / ○ なし / — 該当せず
 
-| 観点 | Anthropic 公式 (OTEL) | ccusage | disler/multi-agent-observability | OpenUsage | **Gengar (想定)** |
+| 観点 | Anthropic 公式 (OTel) | ccusage | disler/multi-agent-observability | OpenUsage | **Gengar (Phase 1)** |
 |---|:---:|:---:|:---:|:---:|:---:|
-| ローカル完結 | ◐ (Collector 要) | ● | ● | ● | ● |
+| ローカル完結 | ◐ (Collector 要) | ● | ● | ● | ◐ (backend は user 用意) |
 | JSONL 取り込み | ○ | ● | ○ | ● | ● |
 | Hook リアルタイム | ○ | ○ | ● | ◐ | ● |
-| セッション単位ドリルダウン | ◐ | ◐ | ● | ◐ | ● |
-| コスト集計 | ● | ● | ○ | ● | ● |
+| session_id ラベル付きメトリクス | ○ | ◐ | ○ | ◐ | ● |
+| Bash 第一トークン粒度 | ○ | ○ | ○ | ○ | ● |
+| コスト集計 | ● | ● | ○ | ● | ◐ (backend で単価掛け算) |
 | マルチツール (Codex/Cursor 等) | ○ | ◐ (Codex のみ) | ○ | ● | ○ (スコープ外) |
-| Claude Code からの MCP クエリ | ○ | ○ | ○ | ◐ | ● |
-| CLI 集計 | ○ | ● | ○ | ● | ● |
-| 自己改善ヒント生成 | ○ | ○ | ○ | ○ | ● |
-| OTEL 取り込み | — | ○ | ○ | ○ | ◐ (将来) |
+| Claude Code からの MCP クエリ | ○ | ○ | ○ | ◐ | ◐ (post-MVP) |
+| CLI 集計 | ○ | ● | ○ | ● | ◐ (post-MVP) |
+| 自己改善ヒント生成 | ○ | ○ | ○ | ○ | ◐ (post-MVP, PromQL ルール) |
+| OTel native emit | ● | ○ | ○ | ○ | ● |
 
 ---
 
@@ -155,17 +156,18 @@ Claude Code を含むローカル AI エージェントのメトリクス収集�
 既存事例を踏まえた Gengar Phase 1 の立ち位置を以下に固定する。
 
 1. **Claude Code 専用**として開始する。初期フェーズでは他エージェント (Codex / Cursor / Aider 等) 対応は明確にスコープ外とし、OpenUsage のような横断対応は追わない（`docs/requirements.md` §5 参照）。
-2. hook + JSONL を両取りし、公式 OTEL 経路では取れないセッション粒度のイベント情報まで拾う。
-3. セッション単位の**ドリルダウン**と**ツール失敗パターン**の可視化に強みを置く（Grafana 系が弱い領域）。
-4. **MCP 経由で Claude Code 自身がクエリできる**点を最大の差別化とする。これは現状どの先行事例もほぼ未着手。
-5. コスト集計は ccusage 互換の結果が得られることを最低ラインにし、再発明は避ける。
-6. OTEL 出力は将来的に副次入力として取り込み可能にする（Phase 1 では必須ではない）。
+2. **OTel ネイティブな Collector** として動作する。hook + JSONL を独自に収集し、`gengar.claude_code.*` prefix のメトリクスを **OTel SDK で OTLP 出力**する。公式 OTel (`claude_code.*`) とは並立し、どちらも ON/OFF 独立。
+3. **自作ダッシュボード・API サーバー・ストレージ・クエリエンジンは作らない**。Prometheus / SigNoz / Grafana など成熟した observability スタックに完全委譲。
+4. 差別化は「**Claude Code 特有の粒度 (hook 粒度・subagent 粒度・Bash 第一トークン)**」と「**session_id ラベル付き**」を備えたメトリクスを emit する点。公式 OTel では取りづらい粒度をカバーする。
+5. **MCP 経由で Claude Code 自身がクエリできる**点も差別化軸として維持するが、実体は backend (PromQL 等) の薄いラッパーとして post-MVP で提供する。
+6. コスト計算は Gengar 本体で行わず、**トークン数のみ emit して backend (Grafana 等) の expression で単価掛け算**する。単価テーブル更新に追従しやすい。
 
 **Phase 1 で意図的に切り捨てる選択肢**
 
 - 他エージェント横断対応（将来 Phase 2 以降で検討）
 - エージェント抽象化レイヤ（Phase 1 では Claude Code のデータ形式に素直に寄せる）
 - チーム共有・クラウド連携
+- **自作の可視化・ストレージ・クエリエンジン**（永久に作らない）
 
 ## 11. 再利用／参照候補
 
