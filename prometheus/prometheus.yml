@@ -1,0 +1,30 @@
+# Prometheus 設定 (Gengar)
+#
+# OTLP メトリクス受信は docker-compose 側で `--web.enable-otlp-receiver` フラグで有効化。
+# 受信エンドポイント: POST /api/v1/otlp/v1/metrics
+# 保持期間 90 日 (docker-compose の --storage.tsdb.retention.time=90d)
+
+global:
+  scrape_interval: 30s
+  evaluation_interval: 30s
+
+# OTLP 受信時の挙動設定
+otlp:
+  # Claude Code が送る OTel リソース属性を Prometheus ラベルとして保持する
+  promote_resource_attributes:
+    - service.name
+    - service.version
+    - service.namespace
+    - os.type
+    - host.arch
+    - terminal.type
+  # メトリクス名の変換ルール
+  # - Claude Code は `claude_code.token.usage` のようにドット区切りで emit
+  # - Prometheus はアンダースコアに変換する
+  translation_strategy: NoUTF8EscapingWithSuffixes
+
+scrape_configs:
+  # Prometheus 自身の監視 (Gengar の stack 健康状態確認に使う)
+  - job_name: prometheus
+    static_configs:
+      - targets: ['localhost:9090']
