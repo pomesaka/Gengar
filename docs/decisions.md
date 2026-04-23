@@ -301,3 +301,46 @@
 - **反映先**: `docs/requirements.md` 全面 / `docs/functional-requirements.md` 全面書き換え
 
 ---
+
+## 決定 19: 公式 OTel に全面依存、Gengar は設定パッケージ+ダッシュボード
+
+- **論点**: Claude Code の公式 OTel (`CLAUDE_CODE_ENABLE_TELEMETRY=1`) でどこまで取れるかを調査した結果、独自収集の必要性が問われた
+- **決定**: **独自 collector は一切作らない**。Gengar は**公式 OTel の受け側を束ねる設定パッケージ**として機能する。具体的には:
+  - Prometheus + Loki + Grafana の docker-compose 一式を同梱
+  - Claude Code 用 managed-settings 例を同梱
+  - **Gengar の核心価値は Grafana ダッシュボード JSON** (Overview / Cost / Tools / Sessions / Subagent / Errors / Compaction)
+  - **Phase 1 は実装コードを書かない**。設定ファイルとダッシュボード JSON と docs のみ
+- **根拠**:
+  - 公式 OTel が metrics (8 種) + events (15+ 種) + traces (beta) を網羅。`tool_result` イベントから tool_name・success・duration・Bash コマンド・MCP tool 名・subagent_type まで取れる
+  - `session.id` がメトリクスラベルに標準で付く (カーディナリティ制御のフラグあり)
+  - ZOZO の事例でも公式 OTel + Collector + BigQuery で数百人規模の運用が成立している
+  - 独自 collector を書くと公式と重複し、メンテナンス負荷だけ増える
+  - Prometheus 2.55+ が OTLP native 受信をサポートしたため、Collector を挟まない構成も容易
+- **却下した代替案**:
+  - A' (独自 OTel SDK で emit): 公式が既に提供するメトリクスを重複させるだけ
+  - 乙 (OTel Collector processor): 必要になったら追加で検討、Phase 1 では不要
+  - 丙 (hook + JSONL collector): 公式 OTel で取れる情報の再発明
+- **副次効果**:
+  - 決定 9 (A') は本決定により**上書き**される
+  - 決定 5 (Bash 第一トークン) は公式 OTel の `OTEL_LOG_TOOL_DETAILS=1` で `bash_command` が取れるため、ユーザー側の設定選択肢として提示するだけに縮小
+  - 決定 6 (セッション境界) は公式 OTel が `session.id` を出すためそのまま使える
+  - 決定 7 (追記型 + 単一ワーカー) は独自 daemon が存在しないため無効化
+  - 決定 18 (collector のみに絞る) は本決定により**さらに縮小**される (設定パッケージへ)
+  - Phase 1 の成果物は「README + docker-compose.yml + 設定ファイル + Grafana dashboards」
+- **Phase 1 成果物構成**:
+  ```
+  Gengar/
+  ├── README.md
+  ├── docker-compose.yml
+  ├── .env.example
+  ├── claude-code-settings.example.json
+  ├── prometheus/prometheus.yml
+  ├── loki/loki-config.yaml
+  ├── otel-collector/config.yaml        # optional
+  └── grafana/
+      ├── provisioning/
+      └── dashboards/*.json             # Gengar の核
+  ```
+- **反映先**: `docs/requirements.md` 全面書き換え / `docs/functional-requirements.md` 全面書き換え / `docs/prior-art.md` §10 再更新
+
+---
