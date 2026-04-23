@@ -7,6 +7,7 @@ services:
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
       - '--web.enable-otlp-receiver'
+      - '--enable-feature=utf8-names'
       - '--storage.tsdb.retention.time=90d'
       - '--storage.tsdb.path=/prometheus'
       - '--web.enable-lifecycle'

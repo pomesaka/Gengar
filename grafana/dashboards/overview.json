@@ -36,7 +36,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "sum(increase(claude_code_cost_usage_USD_total[$__range]))",
+          "expr": "sum(increase({__name__=\"claude_code.cost.usage_USD_total\"}[$__range]))",
           "legendFormat": "$USD"
         }
       ],
@@ -74,7 +74,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "sum(increase(claude_code_token_usage_tokens_total[$__range]))",
+          "expr": "sum(increase({__name__=\"claude_code.token.usage_tokens_total\"}[$__range]))",
           "legendFormat": "tokens"
         }
       ],
@@ -101,7 +101,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "sum(increase(claude_code_session_count_total[$__range]))",
+          "expr": "sum(increase({__name__=\"claude_code.session.count_total\"}[$__range]))",
           "legendFormat": "sessions"
         }
       ],
@@ -128,7 +128,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "sum by (type) (increase(claude_code_active_time_total_seconds_total[$__range]))",
+          "expr": "sum by (type) (increase({__name__=\"claude_code.active_time.seconds_total\"}[$__range]))",
           "legendFormat": "{{type}}"
         }
       ],
@@ -162,7 +162,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "sum by (model) (rate(claude_code_cost_usage_USD_total[$__rate_interval]))",
+          "expr": "sum by (model) (rate({__name__=\"claude_code.cost.usage_USD_total\"}[$__rate_interval]))",
           "legendFormat": "{{model}}"
         }
       ],
@@ -192,7 +192,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "sum by (type) (rate(claude_code_token_usage_tokens_total[$__rate_interval]))",
+          "expr": "sum by (type) (rate({__name__=\"claude_code.token.usage_tokens_total\"}[$__rate_interval]))",
           "legendFormat": "{{type}}"
         }
       ],
@@ -287,7 +287,7 @@
         "label": "Session ID",
         "type": "query",
         "datasource": { "type": "prometheus", "uid": "prometheus" },
-        "query": { "query": "label_values(claude_code_token_usage_tokens_total, session_id)", "refId": "PrometheusVariableQueryEditor-VariableQuery" },
+        "query": { "query": "label_values({__name__=\"claude_code.token.usage_tokens_total\"}, session_id)", "refId": "PrometheusVariableQueryEditor-VariableQuery" },
         "refresh": 2,
         "sort": 1,
         "multi": true,
