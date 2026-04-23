@@ -1,0 +1,13 @@
+# 環境変数 (シークレットを含む可能性あり)
+.env
+
+# Docker volumes など (docker-compose が named volume を使うので通常は作られないが念のため)
+/data/
+/prometheus-data/
+/loki-data/
+/grafana-data/
+
+# OS / Editor
+.DS_Store
+.vscode/
+.idea/

@@ -1,0 +1,307 @@
+{
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": { "type": "grafana", "uid": "-- Grafana --" },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "description": "Claude Code 公式 OTel のコアメトリクスを一望する Gengar のホーム画面。",
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "links": [],
+  "panels": [
+    {
+      "type": "row",
+      "title": "KPI (直近 24 時間)",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 },
+      "id": 100,
+      "collapsed": false,
+      "panels": []
+    },
+    {
+      "type": "stat",
+      "title": "総コスト",
+      "description": "claude_code.cost.usage を合計。公式 OTel が算出した推定値。",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 5, "w": 6, "x": 0, "y": 1 },
+      "id": 1,
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(increase({__name__=\"claude_code.cost.usage_USD_total\"}[$__range]))",
+          "legendFormat": "$USD"
+        }
+      ],
+      "options": {
+        "reduceOptions": { "values": false, "calcs": ["lastNotNull"], "fields": "" },
+        "orientation": "auto",
+        "colorMode": "background",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "textMode": "auto"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "currencyUSD",
+          "decimals": 2,
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "value": null, "color": "green" },
+              { "value": 5, "color": "yellow" },
+              { "value": 20, "color": "red" }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "type": "stat",
+      "title": "総トークン",
+      "description": "claude_code.token.usage を合計 (type: input/output/cacheRead/cacheCreation)。",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 5, "w": 6, "x": 6, "y": 1 },
+      "id": 2,
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(increase({__name__=\"claude_code.token.usage_tokens_total\"}[$__range]))",
+          "legendFormat": "tokens"
+        }
+      ],
+      "options": {
+        "reduceOptions": { "values": false, "calcs": ["lastNotNull"], "fields": "" },
+        "colorMode": "background",
+        "graphMode": "area"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "decimals": 0,
+          "color": { "mode": "fixed", "fixedColor": "blue" }
+        }
+      }
+    },
+    {
+      "type": "stat",
+      "title": "セッション数",
+      "description": "claude_code.session.count。fresh / resume / continue を合算。",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 5, "w": 6, "x": 12, "y": 1 },
+      "id": 3,
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(increase({__name__=\"claude_code.session.count_total\"}[$__range]))",
+          "legendFormat": "sessions"
+        }
+      ],
+      "options": {
+        "reduceOptions": { "values": false, "calcs": ["lastNotNull"], "fields": "" },
+        "colorMode": "background",
+        "graphMode": "area"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "decimals": 0,
+          "color": { "mode": "fixed", "fixedColor": "purple" }
+        }
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Active Time",
+      "description": "claude_code.active_time.total を user / cli で内訳表示。",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 5, "w": 6, "x": 18, "y": 1 },
+      "id": 4,
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (type) (increase({__name__=\"claude_code.active_time.seconds_total\"}[$__range]))",
+          "legendFormat": "{{type}}"
+        }
+      ],
+      "options": {
+        "reduceOptions": { "values": false, "calcs": ["lastNotNull"], "fields": "" },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "value_and_name"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "color": { "mode": "palette-classic" }
+        }
+      }
+    },
+    {
+      "type": "row",
+      "title": "トレンド",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 6 },
+      "id": 101,
+      "collapsed": false,
+      "panels": []
+    },
+    {
+      "type": "timeseries",
+      "title": "コストの推移 (モデル別)",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 7 },
+      "id": 5,
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (model) (rate({__name__=\"claude_code.cost.usage_USD_total\"}[$__rate_interval]))",
+          "legendFormat": "{{model}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "currencyUSD",
+          "decimals": 3,
+          "custom": {
+            "drawStyle": "bars",
+            "lineInterpolation": "linear",
+            "fillOpacity": 60,
+            "stacking": { "mode": "normal", "group": "A" }
+          }
+        }
+      },
+      "options": {
+        "tooltip": { "mode": "multi", "sort": "desc" },
+        "legend": { "displayMode": "table", "placement": "bottom", "calcs": ["sum", "mean"] }
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "トークン消費の推移 (種別)",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 7 },
+      "id": 6,
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (type) (rate({__name__=\"claude_code.token.usage_tokens_total\"}[$__rate_interval]))",
+          "legendFormat": "{{type}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "smooth",
+            "fillOpacity": 20,
+            "stacking": { "mode": "normal", "group": "A" }
+          }
+        }
+      },
+      "options": {
+        "tooltip": { "mode": "multi", "sort": "desc" },
+        "legend": { "displayMode": "table", "placement": "bottom", "calcs": ["sum"] }
+      }
+    },
+    {
+      "type": "row",
+      "title": "アクティビティ",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 15 },
+      "id": 102,
+      "collapsed": false,
+      "panels": []
+    },
+    {
+      "type": "timeseries",
+      "title": "ツール呼び出し (Loki events)",
+      "description": "claude_code.tool_result イベントをツール別にカウント。",
+      "datasource": { "type": "loki", "uid": "loki" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 16 },
+      "id": 7,
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (tool_name) (count_over_time({service_name=\"claude-code\"} | json | event_name=\"tool_result\" [$__auto]))",
+          "legendFormat": "{{tool_name}}",
+          "queryType": "range"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "drawStyle": "bars",
+            "fillOpacity": 70,
+            "stacking": { "mode": "normal", "group": "A" }
+          }
+        }
+      },
+      "options": {
+        "tooltip": { "mode": "multi", "sort": "desc" },
+        "legend": { "displayMode": "table", "placement": "bottom", "calcs": ["sum"] }
+      }
+    },
+    {
+      "type": "logs",
+      "title": "最近のイベント",
+      "description": "Claude Code から届いた OTel events。prompt.id / session.id で絞り込める。",
+      "datasource": { "type": "loki", "uid": "loki" },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 16 },
+      "id": 8,
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "{service_name=\"claude-code\"} | json",
+          "queryType": "range"
+        }
+      ],
+      "options": {
+        "showTime": true,
+        "showLabels": false,
+        "showCommonLabels": false,
+        "wrapLogMessage": true,
+        "prettifyLogMessage": true,
+        "enableLogDetails": true,
+        "dedupStrategy": "none",
+        "sortOrder": "Descending"
+      }
+    }
+  ],
+  "preload": false,
+  "refresh": "30s",
+  "schemaVersion": 40,
+  "tags": ["gengar", "claude-code"],
+  "templating": {
+    "list": [
+      {
+        "name": "session",
+        "label": "Session ID",
+        "type": "query",
+        "datasource": { "type": "prometheus", "uid": "prometheus" },
+        "query": { "query": "label_values({__name__=\"claude_code.token.usage_tokens_total\"}, session_id)", "refId": "PrometheusVariableQueryEditor-VariableQuery" },
+        "refresh": 2,
+        "sort": 1,
+        "multi": true,
+        "includeAll": true,
+        "allValue": ".*",
+        "current": { "text": "All", "value": "$__all" }
+      }
+    ]
+  },
+  "time": { "from": "now-24h", "to": "now" },
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "Gengar — Overview",
+  "uid": "gengar-overview",
+  "version": 1,
+  "weekStart": ""
+}

@@ -1,0 +1,29 @@
+{
+  "$comment": [
+    "Gengar 用の Claude Code OTel 設定サンプル。",
+    "~/.claude/settings.json の env キー配下にマージして使う。",
+    "Gengar docker stack を 127.0.0.1 で起動している前提。",
+    "",
+    "プライバシー注意:",
+    "- OTEL_LOG_USER_PROMPTS / OTEL_LOG_TOOL_DETAILS / OTEL_LOG_TOOL_CONTENT / OTEL_LOG_RAW_API_BODIES は既定で未設定 (opt-in)。",
+    "- 有効化すると本文やコマンド引数が OTel events に含まれ、Loki に保存される。",
+    "- 有効化する場合は docker stack を個人マシン限定でアクセス制御していることを確認すること。"
+  ],
+  "env": {
+    "CLAUDE_CODE_ENABLE_TELEMETRY": "1",
+
+    "OTEL_METRICS_EXPORTER": "otlp",
+    "OTEL_LOGS_EXPORTER": "otlp",
+
+    "OTEL_EXPORTER_OTLP_METRICS_PROTOCOL": "http/protobuf",
+    "OTEL_EXPORTER_OTLP_METRICS_ENDPOINT": "http://127.0.0.1:9090/api/v1/otlp/v1/metrics",
+
+    "OTEL_EXPORTER_OTLP_LOGS_PROTOCOL": "http/protobuf",
+    "OTEL_EXPORTER_OTLP_LOGS_ENDPOINT": "http://127.0.0.1:3100/otlp/v1/logs",
+
+    "OTEL_METRICS_INCLUDE_SESSION_ID": "true",
+
+    "OTEL_METRIC_EXPORT_INTERVAL": "10000",
+    "OTEL_LOGS_EXPORT_INTERVAL": "5000"
+  }
+}
